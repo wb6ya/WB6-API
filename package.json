@@ -22,8 +22,11 @@
     "#utils/*": "./src/Utils/*"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "express": "^5.2.1",
     "express-async-handler": "^1.2.0",
+    "helmet": "^8.2.0",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.3",
     "zod": "^4.4.3"
   },

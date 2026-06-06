@@ -16,11 +16,6 @@ const BlogValidator = z.object({
         invalid_type_error: "Content must be a string" 
     }).min(50, "Content must be at least 50 characters long"),
     
-    author: z.string({ 
-        required_error: "Author is required", 
-        invalid_type_error: "Author must be a string" 
-    }).min(3, "Author must be at least 3 characters long"),
-    
     image: z.string({ 
         required_error: "Image is required", 
         invalid_type_error: "Image must be a string" 

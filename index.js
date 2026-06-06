@@ -3,10 +3,12 @@ import mongoose from "mongoose";
 import { env } from "#config/Env.js";
 import blogRoutes from "#routes/blogRoutes.js";
 import errorHandler from "#middleware/errorHandler.js";
+import authRoutes from "#routes/authRoutes.js";
 
 const app = express();
 app.use(express.json());
 app.use("/api/blog", blogRoutes);
+app.use("/api/auth", authRoutes);
 app.use(errorHandler);
 
 const startServer = async () => {
