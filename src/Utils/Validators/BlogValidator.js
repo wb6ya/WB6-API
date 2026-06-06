@@ -16,10 +16,9 @@ const BlogValidator = z.object({
         invalid_type_error: "Content must be a string" 
     }).min(50, "Content must be at least 50 characters long"),
     
-    image: z.string({ 
-        required_error: "Image is required", 
-        invalid_type_error: "Image must be a string" 
-    }).url("Image must be a valid URL")
+    image: z.string({
+        invalid_type_error: "رابط الصورة يجب أن يكون نص",
+    }).url({ message: "الرابط غير صالح" }).optional(),
 });
 
 export default BlogValidator;

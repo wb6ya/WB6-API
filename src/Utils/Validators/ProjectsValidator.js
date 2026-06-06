@@ -13,10 +13,9 @@ const projectValidator = z.object({
         required_error: "Content is required", 
         invalid_type_error: "Content must be a string" 
     }).min(50, "Content must be at least 50 characters long"),
-    image: z.string({ 
-        required_error: "Image is required", 
-        invalid_type_error: "Image must be a string" 
-    }).url("Invalid URL format"),
+    image: z.string({
+        invalid_type_error: "رابط الصورة يجب أن يكون نص",
+    }).url({ message: "الرابط غير صالح" }).optional(),
     github_url: z.string().url("Invalid URL format").optional(),
     live_url: z.string().url("Invalid URL format").optional(),
 });

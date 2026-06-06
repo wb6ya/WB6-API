@@ -2,15 +2,10 @@ import Project from "#models/Projects.js";
 import asyncHandler from "express-async-handler";
 
 const createProject = asyncHandler(async (req, res) => {
-    const { title, description, content, image, github_url, live_url } = req.body;
-    const project = await Project.create({
-        title,
-        description,
-        content,
-        image,
-        github_url,
-        live_url
-    });
+    if (req.file) {
+        req.body.image = req.file.path; // Cloudinary URL
+    }
+    const project = await Project.create({ ...req.body, author: req.user._id });
     res.status(201).json(project);
 });
 
@@ -29,19 +24,17 @@ const getProjectById = asyncHandler(async (req, res) => {
 });
 
 const updateProject = asyncHandler(async (req, res) => {
-    const { title, description, content, image, github_url, live_url } = req.body;
     const project = await Project.findById(req.params.id);
     if (!project) {
         res.status(404);
         throw new Error("Project not found");
     }
-    project.title = title || project.title;
-    project.description = description || project.description;
-    project.content = content || project.content;
-    project.image = image || project.image;
-    project.github_url = github_url || project.github_url;
-    project.live_url = live_url || project.live_url;
-    const updatedProject = await project.save();
+    
+    if (req.file) {
+        req.body.image = req.file.path;
+    }
+
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.status(200).json(updatedProject);
 });
 
@@ -51,8 +44,8 @@ const deleteProject = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("Project not found");
     }
-    await project.deleteOne()
+    await project.deleteOne();
     res.status(200).json({ message: "Project removed" });
 });
 
-export {createProject, getAllProjects, getProjectById, updateProject, deleteProject}
+export { createProject, getAllProjects, getProjectById, updateProject, deleteProject };

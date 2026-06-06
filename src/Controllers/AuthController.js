@@ -35,5 +35,22 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
-export { registerUser, loginUser };
+const setupAdmin = asyncHandler(async (req, res) => {
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+        res.status(403);
+        throw new Error("Admin is already setup. Use /register if you are an admin.");
+    }
+    
+    const { email, password } = req.body;
+    const user = await User.create({ email, password, role: 'admin' });
+    res.status(200).json({
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id)
+    });
+});
+
+export { registerUser, loginUser, setupAdmin };
 
