@@ -12,6 +12,9 @@ import projectRoutes from "#routes/projectRoutes.js";
 
 const app = express();
 
+// إعداد البروكسي لكي يعمل express-rate-limit بشكل صحيح على Vercel
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors());
 const limiter = rateLimit({
