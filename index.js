@@ -41,3 +41,5 @@ const startServer = async () => {
 };
 startServer();
 
+// Vercel يحتاج لتصدير التطبيق ليعمل في بيئة Serverless
+export default app;
