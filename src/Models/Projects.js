@@ -23,7 +23,6 @@ const projectSchema = new mongoose.Schema({
     },
     github_url: {
         type: String,
-        required: true
     },
     live_url: {
         type: String
