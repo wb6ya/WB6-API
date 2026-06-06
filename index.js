@@ -28,18 +28,17 @@ app.use("/api/project", projectRoutes);
 
 app.use(errorHandler);
 
-const startServer = async () => {
-    try {
-        await mongoose.connect(env.mongodb_url);
-        console.log("Connected to MongoDB");
-        app.listen(env.port, () => {
-            console.log(`Server is running on port http://localhost:${env.port}`);
-        });
-    } catch (error) {
-        console.log(`Error connecting to MongoDB: ${error}`);
-    }
-};
-startServer();
+// Connect to MongoDB
+mongoose.connect(env.mongodb_url)
+    .then(() => console.log("Connected to MongoDB"))
+    .catch((error) => console.log(`Error connecting to MongoDB: ${error}`));
+
+// Run server only locally (Vercel handles listening automatically)
+if (!process.env.VERCEL) {
+    app.listen(env.port || 5500, () => {
+        console.log(`Server is running on port http://localhost:${env.port || 5500}`);
+    });
+}
 
 // Vercel يحتاج لتصدير التطبيق ليعمل في بيئة Serverless
 export default app;
