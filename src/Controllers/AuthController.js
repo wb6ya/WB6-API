@@ -35,7 +35,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
-const setupAdmin = asyncHandler(async (req, res) => {
+const setupAdmin = async (req, res) => {
     const userCount = await User.countDocuments();
     if (userCount > 0) {
         res.status(403);
@@ -50,7 +50,7 @@ const setupAdmin = asyncHandler(async (req, res) => {
         role: user.role,
         token: generateToken(user._id)
     });
-});
+};
 
 export { registerUser, loginUser, setupAdmin };
 
