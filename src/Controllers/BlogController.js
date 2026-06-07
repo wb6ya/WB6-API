@@ -23,11 +23,18 @@ const createBlog = asyncHandler(async (req, res) => {
         req.body.content
     );
     
+    let parsedTags = [];
+    if (req.body.tags) {
+        try { parsedTags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags; }
+        catch (e) { parsedTags = []; }
+    }
+
     const blogData = {
         ...req.body,
         titleEn,
         descriptionEn,
         contentEn,
+        tags: parsedTags,
         author: req.user._id
     };
 
@@ -40,8 +47,21 @@ const getAllBlogs = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const startIndex = (page - 1) * limit;
 
-    const total = await Blog.countDocuments();
-    const blogs = await Blog.find()
+    const filter = {};
+    if (req.query.search) {
+        filter.$or = [
+            { title: { $regex: req.query.search, $options: 'i' } },
+            { description: { $regex: req.query.search, $options: 'i' } },
+            { titleEn: { $regex: req.query.search, $options: 'i' } },
+            { descriptionEn: { $regex: req.query.search, $options: 'i' } },
+        ];
+    }
+    if (req.query.tag) {
+        filter.tags = req.query.tag;
+    }
+
+    const total = await Blog.countDocuments(filter);
+    const blogs = await Blog.find(filter)
         .populate('author', 'username avatar')
         .sort({ createdAt: -1 })
         .skip(startIndex)
@@ -101,6 +121,11 @@ const updateBlog = asyncHandler(async (req, res) => {
         if (titleEn) req.body.titleEn = titleEn;
         if (descriptionEn) req.body.descriptionEn = descriptionEn;
         if (contentEn) req.body.contentEn = contentEn;
+    }
+
+    if (req.body.tags) {
+        try { req.body.tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags; }
+        catch (e) {}
     }
 
     blog = await Blog.findByIdAndUpdate(req.params.id, req.body, { new: true });

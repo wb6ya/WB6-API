@@ -31,6 +31,10 @@ const blogSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    tags: {
+        type: [String],
+        default: []
+    }
 }, { timestamps: true });
 
 export default mongoose.model("Blog", blogSchema);
