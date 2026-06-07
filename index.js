@@ -12,7 +12,6 @@ import projectRoutes from "#routes/projectRoutes.js";
 
 const app = express();
 
-// إعداد البروكسي لكي يعمل express-rate-limit بشكل صحيح على Vercel
 app.set("trust proxy", 1);
 
 app.use(helmet());
@@ -25,7 +24,6 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 app.use(express.json());
 
-// Database connection cache for serverless environment
 let isConnected = false;
 
 const connectDB = async () => {
@@ -39,7 +37,6 @@ const connectDB = async () => {
     }
 };
 
-// Ensure DB connection before processing requests
 app.use(async (req, res, next) => {
     await connectDB();
     next();
@@ -51,12 +48,10 @@ app.use("/api/project", projectRoutes);
 
 app.use(errorHandler);
 
-// Run server only locally (Vercel handles listening automatically)
 if (!process.env.VERCEL) {
     app.listen(env.port || 5500, () => {
         console.log(`Server is running on port http://localhost:${env.port || 5500}`);
     });
 }
 
-// Vercel يحتاج لتصدير التطبيق ليعمل في بيئة Serverless
 export default app;

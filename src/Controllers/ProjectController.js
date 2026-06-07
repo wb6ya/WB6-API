@@ -3,7 +3,7 @@ import asyncHandler from "express-async-handler";
 
 const createProject = asyncHandler(async (req, res) => {
     if (req.file) {
-        req.body.image = req.file.path; // Cloudinary URL
+        req.body.image = req.file.path;
     }
     const project = await Project.create({ ...req.body, author: req.user._id });
     res.status(201).json(project);

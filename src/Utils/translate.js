@@ -50,7 +50,6 @@ export const translateToEnglish = async (title, description, content) => {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Using gemini-flash-latest which points to the newest available flash model
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
@@ -73,7 +72,6 @@ export const translateToEnglish = async (title, description, content) => {
         const result = await model.generateContent(prompt);
         let responseText = result.response.text();
         
-        // Clean up markdown block if the model outputs it despite instructions
         responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
         const translatedData = JSON.parse(responseText);

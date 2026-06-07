@@ -3,15 +3,23 @@ import asyncHandler from "express-async-handler";
 import generateToken from "#utils/generateToken.js";
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, username } = req.body;
     
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: String(email) });
     if (userExists) {
         res.status(400);
         throw new Error("User already exists");
     }
     
-    const user = await User.create({ email, password });
+    const finalUsername = String(username || email.split('@')[0]);
+    
+    const usernameExists = await User.findOne({ username: finalUsername });
+    if (usernameExists) {
+        res.status(400);
+        throw new Error("Username already taken");
+    }
+    
+    const user = await User.create({ email: String(email), password: String(password), username: finalUsername });
     res.status(200).json({
         _id: user._id,
         email: user.email,
@@ -22,8 +30,8 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     
-    const user = await User.findOne({ email });
-    if (user && await user.matchPassword(password)) {
+    const user = await User.findOne({ email: String(email) });
+    if (user && await user.matchPassword(String(password))) {
         res.status(200).json({
             _id: user._id,
             email: user.email,
@@ -42,8 +50,10 @@ const setupAdmin = async (req, res) => {
         throw new Error("Admin is already setup. Use /register if you are an admin.");
     }
     
-    const { email, password } = req.body;
-    const user = await User.create({ email, password, role: 'admin' });
+    const { email, password, username } = req.body;
+    
+    const finalUsername = String(username || email.split('@')[0]);
+    const user = await User.create({ email: String(email), password: String(password), username: finalUsername, role: 'admin' });
     res.status(200).json({
         _id: user._id,
         email: user.email,
@@ -52,5 +62,29 @@ const setupAdmin = async (req, res) => {
     });
 };
 
-export { registerUser, loginUser, setupAdmin };
+const updateProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    if (req.body.username) {
+        user.username = String(req.body.username);
+    }
+    if (req.file) {
+        user.avatar = req.file.path;
+    }
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        token: generateToken(updatedUser._id)
+    });
+});
+
+export { registerUser, loginUser, setupAdmin, updateProfile };
 
