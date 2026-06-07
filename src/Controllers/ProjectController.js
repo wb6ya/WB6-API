@@ -1,4 +1,4 @@
-import Project from "#models/Projects.js";
+import Project from "#models/Project.js";
 import asyncHandler from "express-async-handler";
 
 const createProject = asyncHandler(async (req, res) => {

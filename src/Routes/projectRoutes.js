@@ -1,6 +1,6 @@
 import { Router } from "express";
 import validate from "#middleware/validate.js";
-import projectValidator from "#utils/Validators/ProjectsValidator.js";
+import projectValidator from "#utils/Validators/ProjectValidator.js";
 import { createProject, getAllProjects, getProjectById, updateProject, deleteProject } from "#controllers/ProjectController.js";
 import { protect, admin } from "#middleware/authMiddleware.js";
 import upload from "#utils/upload.js";

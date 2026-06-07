@@ -13,6 +13,15 @@ const blogSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    titleEn: {
+        type: String,
+    },
+    descriptionEn: {
+        type: String,
+    },
+    contentEn: {
+        type: String,
+    },
     author: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,

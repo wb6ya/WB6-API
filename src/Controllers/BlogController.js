@@ -1,17 +1,48 @@
 import Blog from "#models/Blog.js";
 import asyncHandler from "express-async-handler";
+import { translateToEnglish } from "#utils/translate.js";
 
 const createBlog = asyncHandler(async (req, res) => {
     if (req.file) {
         req.body.image = req.file.path; // Cloudinary URL
     }
-    const blog = await Blog.create({ ...req.body, author: req.user._id });
+    
+    // Translate to English
+    const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
+        req.body.title, 
+        req.body.description, 
+        req.body.content
+    );
+    
+    const blogData = {
+        ...req.body,
+        titleEn,
+        descriptionEn,
+        contentEn,
+        author: req.user._id
+    };
+
+    const blog = await Blog.create(blogData);
     res.status(201).json(blog);
 });
 
 const getAllBlogs = asyncHandler(async (req, res) => {
-    const blogs = await Blog.find();
-    res.status(200).json(blogs);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const startIndex = (page - 1) * limit;
+
+    const total = await Blog.countDocuments();
+    const blogs = await Blog.find()
+        .sort({ createdAt: -1 })
+        .skip(startIndex)
+        .limit(limit);
+
+    res.status(200).json({
+        blogs,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalBlogs: total
+    });
 });
 
 const getBlogById = asyncHandler(async (req, res) => {
@@ -31,14 +62,26 @@ const updateBlog = asyncHandler(async (req, res) => {
         throw new Error("Blog not found");
     }
 
-    // Check Authorization: only the author can update their blog
-    if (blog.author.toString() !== req.user._id.toString()) {
+    // Check Authorization: only the author can update their blog (if author exists)
+    if (blog.author && req.user && blog.author.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error("Not authorized to update this blog");
     }
 
     if (req.file) {
         req.body.image = req.file.path;
+    }
+
+    if (req.body.title || req.body.description || req.body.content) {
+        const titleToTranslate = req.body.title || blog.title;
+        const descToTranslate = req.body.description || blog.description;
+        const contentToTranslate = req.body.content || blog.content;
+        
+        const { titleEn, descriptionEn, contentEn } = await translateToEnglish(titleToTranslate, descToTranslate, contentToTranslate);
+        
+        if (titleEn) req.body.titleEn = titleEn;
+        if (descriptionEn) req.body.descriptionEn = descriptionEn;
+        if (contentEn) req.body.contentEn = contentEn;
     }
 
     blog = await Blog.findByIdAndUpdate(req.params.id, req.body, { new: true });
