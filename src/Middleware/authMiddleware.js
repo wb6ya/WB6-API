@@ -10,6 +10,12 @@ const protect = asyncHandler(async (req, res, next) => {
             token = req.headers.authorization.split(" ")[1];
             const decoded = jwt.verify(token, env.jwt_secret);
             req.user = await User.findById(decoded.id).select("-password");
+            
+            if (!req.user) {
+                res.status(401);
+                throw new Error("المستخدم غير موجود، يرجى تسجيل الدخول مرة أخرى");
+            }
+            
             next();
         } catch (error) {
             res.status(401);

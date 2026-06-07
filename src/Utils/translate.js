@@ -1,5 +1,46 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+export const improveArabicText = async (title, description, content) => {
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            console.warn("GEMINI_API_KEY is not set. Skipping text improvement.");
+            return { title: title || "", description: description || "", content: content || "" };
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+        const prompt = `
+        You are an expert Arabic copywriter and editor. Your task is to improve the following Arabic blog post content.
+        Rewrite it to be in a formal, beautiful, and highly professional style. Fix any grammatical errors and improve the vocabulary.
+        
+        Return ONLY a JSON object with exactly these keys: "title", "description", "content".
+        Do not wrap in markdown tags like \`\`\`json. Just return the raw JSON object.
+        
+        Title to improve:
+        ${title || ""}
+        
+        Description to improve:
+        ${description || ""}
+        
+        Content to improve:
+        ${content || ""}
+        `;
+
+        const result = await model.generateContent(prompt);
+        let responseText = result.response.text();
+        
+        responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        const improvedData = JSON.parse(responseText);
+        return improvedData;
+    } catch (error) {
+        console.error("Text improvement failed:", error);
+        return { title: title || "", description: description || "", content: content || "" };
+    }
+};
+
 export const translateToEnglish = async (title, description, content) => {
     try {
         const apiKey = process.env.GEMINI_API_KEY;

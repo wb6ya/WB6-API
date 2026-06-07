@@ -1,13 +1,25 @@
 import Blog from "#models/Blog.js";
 import asyncHandler from "express-async-handler";
-import { translateToEnglish } from "#utils/translate.js";
+import { translateToEnglish, improveArabicText } from "#utils/translate.js";
 
 const createBlog = asyncHandler(async (req, res) => {
     if (req.file) {
         req.body.image = req.file.path; // Cloudinary URL
     }
     
-    // Translate to English
+    // 1. Improve Arabic Text
+    const improvedArabic = await improveArabicText(
+        req.body.title,
+        req.body.description,
+        req.body.content
+    );
+
+    // Update req.body with improved text (fallback to original if improvement failed)
+    req.body.title = improvedArabic.title || req.body.title;
+    req.body.description = improvedArabic.description || req.body.description;
+    req.body.content = improvedArabic.content || req.body.content;
+
+    // 2. Translate improved text to English
     const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
         req.body.title, 
         req.body.description, 
@@ -73,11 +85,24 @@ const updateBlog = asyncHandler(async (req, res) => {
     }
 
     if (req.body.title || req.body.description || req.body.content) {
-        const titleToTranslate = req.body.title || blog.title;
-        const descToTranslate = req.body.description || blog.description;
-        const contentToTranslate = req.body.content || blog.content;
+        const titleToProcess = req.body.title || blog.title;
+        const descToProcess = req.body.description || blog.description;
+        const contentToProcess = req.body.content || blog.content;
         
-        const { titleEn, descriptionEn, contentEn } = await translateToEnglish(titleToTranslate, descToTranslate, contentToTranslate);
+        // 1. Improve Arabic Text
+        const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
+
+        // Update req.body with improved text
+        if (improvedArabic.title) req.body.title = improvedArabic.title;
+        if (improvedArabic.description) req.body.description = improvedArabic.description;
+        if (improvedArabic.content) req.body.content = improvedArabic.content;
+
+        // 2. Translate improved text to English
+        const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
+            req.body.title || blog.title, 
+            req.body.description || blog.description, 
+            req.body.content || blog.content
+        );
         
         if (titleEn) req.body.titleEn = titleEn;
         if (descriptionEn) req.body.descriptionEn = descriptionEn;

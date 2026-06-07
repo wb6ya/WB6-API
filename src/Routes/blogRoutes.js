@@ -10,7 +10,7 @@ const router = Router();
 router.post("/", protect, upload.single("image"), validate(BlogValidator), createBlog);
 router.get("/", getAllBlogs);
 router.get("/:id", getBlogById);
-router.put("/:id", protect, updateBlog);
+router.put("/:id", protect, upload.single("image"), updateBlog);
 router.delete("/:id", protect, admin, deleteBlog);
 
 export default router;
