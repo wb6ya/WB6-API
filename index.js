@@ -25,16 +25,31 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 app.use(express.json());
 
+// Database connection cache for serverless environment
+let isConnected = false;
+
+const connectDB = async () => {
+    if (isConnected) return;
+    try {
+        const db = await mongoose.connect(env.mongodb_url);
+        isConnected = db.connections[0].readyState === 1;
+        console.log("Connected to MongoDB");
+    } catch (error) {
+        console.log(`Error connecting to MongoDB: ${error}`);
+    }
+};
+
+// Ensure DB connection before processing requests
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+});
+
 app.use("/api/blog", blogRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/project", projectRoutes);
 
 app.use(errorHandler);
-
-// Connect to MongoDB
-mongoose.connect(env.mongodb_url)
-    .then(() => console.log("Connected to MongoDB"))
-    .catch((error) => console.log(`Error connecting to MongoDB: ${error}`));
 
 // Run server only locally (Vercel handles listening automatically)
 if (!process.env.VERCEL) {
