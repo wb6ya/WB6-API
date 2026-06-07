@@ -49,15 +49,18 @@ const getAllBlogs = asyncHandler(async (req, res) => {
 
     const filter = {};
     if (req.query.search) {
+        // Prevent ReDoS by escaping regex special characters
+        const safeSearch = String(req.query.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         filter.$or = [
-            { title: { $regex: req.query.search, $options: 'i' } },
-            { description: { $regex: req.query.search, $options: 'i' } },
-            { titleEn: { $regex: req.query.search, $options: 'i' } },
-            { descriptionEn: { $regex: req.query.search, $options: 'i' } },
+            { title: { $regex: safeSearch, $options: 'i' } },
+            { description: { $regex: safeSearch, $options: 'i' } },
+            { titleEn: { $regex: safeSearch, $options: 'i' } },
+            { descriptionEn: { $regex: safeSearch, $options: 'i' } },
         ];
     }
     if (req.query.tag) {
-        filter.tags = req.query.tag;
+        // Cast to string to prevent NoSQL object injection
+        filter.tags = String(req.query.tag);
     }
 
     const total = await Blog.countDocuments(filter);
@@ -128,7 +131,16 @@ const updateBlog = asyncHandler(async (req, res) => {
         catch (e) {}
     }
 
-    blog = await Blog.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Prevent Mass Assignment vulnerability
+    const allowedBlogUpdates = ['title', 'description', 'content', 'titleEn', 'descriptionEn', 'contentEn', 'image', 'tags'];
+    const updateData = {};
+    allowedBlogUpdates.forEach(field => {
+        if (req.body[field] !== undefined) {
+            updateData[field] = req.body[field];
+        }
+    });
+
+    blog = await Blog.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.status(200).json(blog);
 });
 

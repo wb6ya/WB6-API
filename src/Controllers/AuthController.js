@@ -35,6 +35,9 @@ const loginUser = asyncHandler(async (req, res) => {
         res.status(200).json({
             _id: user._id,
             email: user.email,
+            role: user.role,
+            username: user.username,
+            avatar: user.avatar,
             token: generateToken(user._id)
         });
     } else {
@@ -82,9 +85,36 @@ const updateProfile = asyncHandler(async (req, res) => {
         username: updatedUser.username,
         email: updatedUser.email,
         avatar: updatedUser.avatar,
+        role: updatedUser.role,
         token: generateToken(updatedUser._id)
     });
 });
 
-export { registerUser, loginUser, setupAdmin, updateProfile };
+const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}).select('-password');
+    res.status(200).json(users);
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    if (req.body.username) user.username = String(req.body.username);
+    if (req.file) user.avatar = req.file.path;
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        role: updatedUser.role
+    });
+});
+
+export { registerUser, loginUser, setupAdmin, updateProfile, getAllUsers, updateUser };
 

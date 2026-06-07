@@ -34,7 +34,16 @@ const updateProject = asyncHandler(async (req, res) => {
         req.body.image = req.file.path;
     }
 
-    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Prevent Mass Assignment vulnerability
+    const allowedProjectUpdates = ['title', 'description', 'content', 'image', 'stack', 'github_url', 'live_url', 'blog_id'];
+    const updateData = {};
+    allowedProjectUpdates.forEach(field => {
+        if (req.body[field] !== undefined) {
+            updateData[field] = req.body[field];
+        }
+    });
+
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.status(200).json(updatedProject);
 });
 

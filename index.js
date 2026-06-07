@@ -9,6 +9,7 @@ import blogRoutes from "#routes/blogRoutes.js";
 import errorHandler from "#middleware/errorHandler.js";
 import authRoutes from "#routes/authRoutes.js";
 import projectRoutes from "#routes/projectRoutes.js";
+import tagRoutes from "#routes/tagRoutes.js";
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use(async (req, res, next) => {
 app.use("/api/blog", blogRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/project", projectRoutes);
+app.use("/api/tags", tagRoutes);
 
 app.use(errorHandler);
 
