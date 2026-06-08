@@ -20,6 +20,7 @@ export const generateAndUploadImage = async (title, description) => {
                     "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
                     {
                         method: "POST",
+                        family: 4, // Force IPv4 to bypass Vercel DNS bugs
                         headers: {
                             "Authorization": `Bearer ${apiKey}`,
                             "Content-Type": "application/json",
@@ -41,7 +42,7 @@ export const generateAndUploadImage = async (title, description) => {
                 );
 
                 req.on("error", (e) => reject(e));
-                req.setTimeout(20000, () => {
+                req.setTimeout(30000, () => {
                     req.destroy();
                     reject(new Error("Request timed out"));
                 });
@@ -53,28 +54,8 @@ export const generateAndUploadImage = async (title, description) => {
                 throw new Error(`Hugging Face API returned ${response.status}: ${response.text}`);
             }
         } catch (error) {
-            console.warn(`Hugging Face failed (${error.message}). Falling back to Pollinations AI...`);
-            
-            // Fallback to Pollinations AI (Works locally, blocked on Vercel)
-            const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=400&height=400&nologo=true`;
-            response = await new Promise((resolve, reject) => {
-                https.get(pollUrl, (res) => {
-                    let chunks = [];
-                    res.on("data", (chunk) => chunks.push(chunk));
-                    res.on("end", () => {
-                        const buffer = Buffer.concat(chunks);
-                        if (res.statusCode >= 200 && res.statusCode < 300) {
-                            resolve({ ok: true, buffer });
-                        } else {
-                            resolve({ ok: false, status: res.statusCode });
-                        }
-                    });
-                }).on("error", reject);
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Both image APIs failed. Pollinations returned: ${response.status}`);
-            }
+            console.warn(`Hugging Face failed (${error.message}). Returning null for icon...`);
+            return null; // Skip if Hugging Face fails
         }
         
         const buffer = response.buffer;
@@ -83,7 +64,9 @@ export const generateAndUploadImage = async (title, description) => {
         console.log("Uploading AI generated image to Cloudinary...");
         const uploadResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
-                { folder: "portfolio_uploads/ai_generated" },
+                { 
+                    folder: "portfolio_uploads/ai_generated",
+                },
                 (error, result) => {
                     if (error) reject(error);
                     else resolve(result);
