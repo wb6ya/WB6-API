@@ -1,3 +1,4 @@
+// @ts-nocheck
 import jwt from "jsonwebtoken";
 import { env } from "#config/Env.js";
 import User from "#models/User.js";

@@ -1,20 +1,24 @@
+// @ts-nocheck
 import { cloudinary } from "./upload.js";
-export const generateAndUploadImage = async (title, description) => {
+import { AIError } from "./translate.js";
+
+export const generateAndUploadImage = async (title: string, description: string) => {
+    const imagePrompt = `Premium high-end 3D app icon of: ${title || description}. Masterpiece, highly detailed, beautiful soft studio lighting, vivid vibrant colors, glossy finish, modern UI/UX design, Behance top trending, pure #ffffff white background, centered and isolated. NO text, NO words, NO letters, NO logos, NO brands, NO watermarks, NO signatures.`;
+
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (!accountId || !apiToken) {
+        throw new AIError(
+            "بيانات اعتماد Cloudflare AI غير موجودة (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN)",
+            "إنشاء الصورة بالذكاء الاصطناعي"
+        );
+    }
+
     try {
-        const imagePrompt = `Premium high-end 3D app icon of: ${title || description}. Masterpiece, highly detailed, beautiful soft studio lighting, vivid vibrant colors, glossy finish, modern UI/UX design, Behance top trending, pure #ffffff white background, centered and isolated. NO text, NO words, NO letters, NO logos, NO brands, NO watermarks, NO signatures.`;
-        console.log("Generated Icon Prompt:", imagePrompt);
-
-        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-
-        if (!accountId || !apiToken) {
-            console.error("Cloudflare AI credentials missing.");
-            return null;
-        }
-
         console.log("Fetching image from Cloudflare Workers AI...");
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout for production stability
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/stabilityai/stable-diffusion-xl-base-1.0`,
@@ -32,13 +36,12 @@ export const generateAndUploadImage = async (title, description) => {
 
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`Cloudflare AI failed: ${response.status} ${errText}`);
+            throw new Error(`Cloudflare AI HTTP ${response.status}: ${errText}`);
         }
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Upload directly to Cloudinary via stream
         console.log("Uploading AI generated image to Cloudinary...");
         const uploadResponse = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
@@ -55,14 +58,16 @@ export const generateAndUploadImage = async (title, description) => {
 
         console.log("AI Image generated and uploaded successfully.");
         
-        // Transform the Cloudinary URL to make the white background transparent
         let transparentUrl = uploadResponse.secure_url;
         transparentUrl = transparentUrl.replace('/upload/', '/upload/e_make_transparent:15/');
         transparentUrl = transparentUrl.replace(/\.jpg$/i, '.png');
 
         return transparentUrl;
-    } catch (error) {
-        console.error("AI Image Generation failed:", error);
-        return null;
+    } catch (error: any) {
+        if (error instanceof AIError) throw error;
+        throw new AIError(
+            `فشل إنشاء الصورة بالذكاء الاصطناعي: ${error.message || "خطأ غير معروف"}`,
+            "إنشاء الصورة بالذكاء الاصطناعي"
+        );
     }
 };

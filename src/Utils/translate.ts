@@ -1,13 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const improveArabicText = async (title, description, content) => {
-    try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.warn("GEMINI_API_KEY is not set. Skipping text improvement.");
-            return { title: title || "", description: description || "", content: content || "" };
-        }
+export class AIError extends Error {
+    constructor(message: string, public readonly step: string) {
+        super(message);
+        this.name = "AIError";
+    }
+}
 
+export const improveArabicText = async (title: string, description: string, content: string) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new AIError("مفتاح Gemini API غير موجود في إعدادات البيئة (GEMINI_API_KEY)", "تحسين النص العربي");
+    }
+
+    try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
@@ -34,21 +40,28 @@ export const improveArabicText = async (title, description, content) => {
         responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
         const improvedData = JSON.parse(responseText);
+
+        if (!improvedData.title || !improvedData.description || !improvedData.content) {
+            throw new Error("الذكاء الاصطناعي لم يُرجع جميع الحقول المطلوبة (title, description, content)");
+        }
+
         return improvedData;
-    } catch (error) {
-        console.error("Text improvement failed:", error);
-        return { title: title || "", description: description || "", content: content || "" };
+    } catch (error: any) {
+        if (error instanceof AIError) throw error;
+        throw new AIError(
+            `فشل تحسين النص العربي: ${error.message || "خطأ غير معروف"}`,
+            "تحسين النص العربي"
+        );
     }
 };
 
-export const translateToEnglish = async (title, description, content) => {
-    try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.warn("GEMINI_API_KEY is not set. Skipping translation.");
-            return { titleEn: "", descriptionEn: "", contentEn: "" };
-        }
+export const translateToEnglish = async (title: string, description: string, content: string) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new AIError("مفتاح Gemini API غير موجود في إعدادات البيئة (GEMINI_API_KEY)", "الترجمة للإنجليزية");
+    }
 
+    try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
@@ -75,9 +88,17 @@ export const translateToEnglish = async (title, description, content) => {
         responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
         const translatedData = JSON.parse(responseText);
+
+        if (!translatedData.titleEn || !translatedData.descriptionEn || !translatedData.contentEn) {
+            throw new Error("الذكاء الاصطناعي لم يُرجع جميع الحقول المترجمة (titleEn, descriptionEn, contentEn)");
+        }
+
         return translatedData;
-    } catch (error) {
-        console.error("Translation failed:", error);
-        return { titleEn: "", descriptionEn: "", contentEn: "" };
+    } catch (error: any) {
+        if (error instanceof AIError) throw error;
+        throw new AIError(
+            `فشلت الترجمة للإنجليزية: ${error.message || "خطأ غير معروف"}`,
+            "الترجمة للإنجليزية"
+        );
     }
 };

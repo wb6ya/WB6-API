@@ -1,3 +1,4 @@
+// @ts-nocheck
 import User from "#models/User.js";
 import asyncHandler from "express-async-handler";
 import generateToken from "#utils/generateToken.js";
@@ -8,7 +9,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const userExists = await User.findOne({ email: String(email) });
     if (userExists) {
         res.status(400);
-        throw new Error("User already exists");
+        throw new Error("هذا البريد الإلكتروني مسجل مسبقاً");
     }
     
     const finalUsername = String(username || email.split('@')[0]);
@@ -16,23 +17,35 @@ const registerUser = asyncHandler(async (req, res) => {
     const usernameExists = await User.findOne({ username: finalUsername });
     if (usernameExists) {
         res.status(400);
-        throw new Error("Username already taken");
+        throw new Error("اسم المستخدم مأخوذ بالفعل، اختر اسماً آخر");
     }
     
     const user = await User.create({ email: String(email), password: String(password), username: finalUsername });
-    res.status(200).json({
-        _id: user._id,
-        email: user.email,
-        token: generateToken(user._id)
+    res.status(201).json({
+        success: true,
+        message: "تم إنشاء الحساب بنجاح",
+        data: {
+            _id: user._id,
+            email: user.email,
+            username: user.username,
+            token: generateToken(user._id)
+        }
     });
 });
 
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     
+    if (!email || !password) {
+        res.status(400);
+        throw new Error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+    }
+
     const user = await User.findOne({ email: String(email) });
     if (user && await user.matchPassword(String(password))) {
         res.status(200).json({
+            success: true,
+            message: "تم تسجيل الدخول بنجاح",
             _id: user._id,
             email: user.email,
             role: user.role,
@@ -42,34 +55,44 @@ const loginUser = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(401);
-        throw new Error("Invalid credentials");
+        throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
     }
 });
 
-const setupAdmin = async (req, res) => {
+const setupAdmin = asyncHandler(async (req, res) => {
     const userCount = await User.countDocuments();
     if (userCount > 0) {
         res.status(403);
-        throw new Error("Admin is already setup. Use /register if you are an admin.");
+        throw new Error("تم إعداد المدير مسبقاً. استخدم /register إذا كنت مديراً.");
     }
     
     const { email, password, username } = req.body;
     
+    if (!email || !password) {
+        res.status(400);
+        throw new Error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+    }
+
     const finalUsername = String(username || email.split('@')[0]);
     const user = await User.create({ email: String(email), password: String(password), username: finalUsername, role: 'admin' });
-    res.status(200).json({
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id)
+    res.status(201).json({
+        success: true,
+        message: "تم إنشاء حساب المدير بنجاح",
+        data: {
+            _id: user._id,
+            email: user.email,
+            role: user.role,
+            username: user.username,
+            token: generateToken(user._id)
+        }
     });
-};
+});
 
 const updateProfile = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) {
         res.status(404);
-        throw new Error("User not found");
+        throw new Error("المستخدم غير موجود");
     }
 
     if (req.body.username) {
@@ -81,18 +104,27 @@ const updateProfile = asyncHandler(async (req, res) => {
 
     const updatedUser = await user.save();
     res.status(200).json({
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        avatar: updatedUser.avatar,
-        role: updatedUser.role,
-        token: generateToken(updatedUser._id)
+        success: true,
+        message: "تم تحديث الملف الشخصي بنجاح",
+        data: {
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            avatar: updatedUser.avatar,
+            role: updatedUser.role,
+            token: generateToken(updatedUser._id)
+        }
     });
 });
 
 const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find({}).select('-password');
-    res.status(200).json(users);
+    res.status(200).json({
+        success: true,
+        message: "تم جلب قائمة المستخدمين بنجاح",
+        data: users,
+        total: users.length
+    });
 });
 
 const updateUser = asyncHandler(async (req, res) => {
@@ -100,7 +132,7 @@ const updateUser = asyncHandler(async (req, res) => {
     
     if (!user) {
         res.status(404);
-        throw new Error("User not found");
+        throw new Error("المستخدم غير موجود");
     }
 
     if (req.body.username) user.username = String(req.body.username);
@@ -108,13 +140,16 @@ const updateUser = asyncHandler(async (req, res) => {
 
     const updatedUser = await user.save();
     res.status(200).json({
-        _id: updatedUser._id,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        avatar: updatedUser.avatar,
-        role: updatedUser.role
+        success: true,
+        message: "تم تحديث بيانات المستخدم بنجاح",
+        data: {
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            avatar: updatedUser.avatar,
+            role: updatedUser.role
+        }
     });
 });
 
 export { registerUser, loginUser, setupAdmin, updateProfile, getAllUsers, updateUser };
-

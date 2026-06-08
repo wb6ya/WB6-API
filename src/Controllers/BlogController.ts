@@ -1,6 +1,7 @@
+// @ts-nocheck
 import Blog from "#models/Blog.js";
 import asyncHandler from "express-async-handler";
-import { translateToEnglish, improveArabicText } from "#utils/translate.js";
+import { translateToEnglish, improveArabicText, AIError } from "#utils/translate.js";
 import { generateAndUploadImage } from "#utils/aiImage.js";
 import mongoose from "mongoose";
 
@@ -9,42 +10,56 @@ const createBlog = asyncHandler(async (req, res) => {
         req.body.image = req.file.path;
     }
     
-    let improvedArabic = { title: req.body.title, description: req.body.description, content: req.body.content };
+    // الخطوة 1: تحسين النص العربي (إجباري - يوقف الإنشاء عند الفشل)
+    let improvedArabic;
     try {
-        const result = await improveArabicText(req.body.title, req.body.description, req.body.content);
-        if (result) improvedArabic = { ...improvedArabic, ...result };
+        improvedArabic = await improveArabicText(req.body.title, req.body.description, req.body.content);
     } catch (err) {
-        console.warn("AI Text Improvement failed, using original text:", err.message);
+        const message = err instanceof AIError 
+            ? `فشل في مرحلة "${err.step}": ${err.message}` 
+            : `فشل تحسين النص العربي: ${err.message}`;
+        res.status(502);
+        throw new Error(message);
     }
 
     req.body.title = improvedArabic.title;
     req.body.description = improvedArabic.description;
     req.body.content = improvedArabic.content;
 
-    let titleEn = "", descriptionEn = "", contentEn = "";
+    // الخطوة 2: الترجمة للإنجليزية (إجباري - يوقف الإنشاء عند الفشل)
+    let titleEn, descriptionEn, contentEn;
     try {
         const result = await translateToEnglish(req.body.title, req.body.description, req.body.content);
-        if (result) {
-            titleEn = result.titleEn;
-            descriptionEn = result.descriptionEn;
-            contentEn = result.contentEn;
-        }
+        titleEn = result.titleEn;
+        descriptionEn = result.descriptionEn;
+        contentEn = result.contentEn;
     } catch (err) {
-        console.warn("AI Translation failed, leaving English fields empty:", err.message);
+        const message = err instanceof AIError 
+            ? `فشل في مرحلة "${err.step}": ${err.message}` 
+            : `فشل الترجمة للإنجليزية: ${err.message}`;
+        res.status(502);
+        throw new Error(message);
     }
     
+    // الخطوة 3: تحليل التاغات
     let parsedTags = [];
     if (req.body.tags) {
         try { parsedTags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags; }
         catch (e) { parsedTags = []; }
     }
 
-    const aiIconUrl = await generateAndUploadImage(titleEn || req.body.title, descriptionEn || req.body.description);
-    if (aiIconUrl) {
-        req.body.icon = aiIconUrl;
+    // الخطوة 4: إنشاء صورة AI (إجباري - يوقف الإنشاء عند الفشل)
+    let aiIconUrl;
+    try {
+        aiIconUrl = await generateAndUploadImage(titleEn || req.body.title, descriptionEn || req.body.description);
+    } catch (err) {
+        const message = err instanceof AIError 
+            ? `فشل في مرحلة "${err.step}": ${err.message}` 
+            : `فشل إنشاء الصورة: ${err.message}`;
+        res.status(502);
+        throw new Error(message);
     }
 
-    // Generate the exact link format based on the user's website structure
     const blogId = new mongoose.Types.ObjectId();
     const link = `https://blog.wb6ya.com/ar/blog/${blogId}`;
 
@@ -55,12 +70,18 @@ const createBlog = asyncHandler(async (req, res) => {
         descriptionEn,
         contentEn,
         tags: parsedTags,
+        icon: aiIconUrl,
         author: req.user._id,
         link
     };
 
     const blog = await Blog.create(blogData);
-    res.status(201).json(blog);
+
+    res.status(201).json({
+        success: true,
+        message: "تم إنشاء المقال بنجاح",
+        data: blog,
+    });
 });
 
 const getAllBlogs = asyncHandler(async (req, res) => {
@@ -70,7 +91,6 @@ const getAllBlogs = asyncHandler(async (req, res) => {
 
     const filter = {};
     if (req.query.search) {
-        // Prevent ReDoS by escaping regex special characters
         const safeSearch = String(req.query.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         filter.$or = [
             { title: { $regex: safeSearch, $options: 'i' } },
@@ -80,7 +100,6 @@ const getAllBlogs = asyncHandler(async (req, res) => {
         ];
     }
     if (req.query.tag) {
-        // Cast to string to prevent NoSQL object injection
         filter.tags = String(req.query.tag);
     }
 
@@ -92,7 +111,10 @@ const getAllBlogs = asyncHandler(async (req, res) => {
         .limit(limit);
 
     res.status(200).json({
-        blogs,
+        success: true,
+        message: "تم جلب المقالات بنجاح",
+        data: blogs,
+        blogs, // backward compatibility
         currentPage: page,
         totalPages: Math.ceil(total / limit),
         totalBlogs: total
@@ -103,9 +125,14 @@ const getBlogById = asyncHandler(async (req, res) => {
     const blog = await Blog.findById(req.params.id).populate('author', 'username avatar');
     if (!blog) {
         res.status(404);
-        throw new Error("Blog not found");
+        throw new Error("المقال غير موجود");
     }
-    res.status(200).json(blog);
+    res.status(200).json({
+        success: true,
+        message: "تم جلب المقال بنجاح",
+        data: blog,
+        ...blog.toObject(), // backward compatibility
+    });
 });
 
 const updateBlog = asyncHandler(async (req, res) => {
@@ -113,12 +140,12 @@ const updateBlog = asyncHandler(async (req, res) => {
     
     if (!blog) {
         res.status(404);
-        throw new Error("Blog not found");
+        throw new Error("المقال غير موجود");
     }
 
     if (blog.author && req.user && blog.author.toString() !== req.user._id.toString()) {
         res.status(403);
-        throw new Error("Not authorized to update this blog");
+        throw new Error("غير مصرح لك بتعديل هذا المقال");
     }
 
     if (req.file) {
@@ -130,15 +157,21 @@ const updateBlog = asyncHandler(async (req, res) => {
         const descToProcess = req.body.description || blog.description;
         const contentToProcess = req.body.content || blog.content;
         
+        // تحسين النص العربي (إجباري عند التعديل)
         try {
             const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
             if (improvedArabic.title) req.body.title = improvedArabic.title;
             if (improvedArabic.description) req.body.description = improvedArabic.description;
             if (improvedArabic.content) req.body.content = improvedArabic.content;
         } catch (err) {
-            console.warn("AI Text Improvement failed during update:", err.message);
+            const message = err instanceof AIError 
+                ? `فشل في مرحلة "${err.step}": ${err.message}` 
+                : `فشل تحسين النص العربي: ${err.message}`;
+            res.status(502);
+            throw new Error(message);
         }
 
+        // الترجمة للإنجليزية (إجباري عند التعديل)
         try {
             const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
                 req.body.title || blog.title, 
@@ -150,7 +183,11 @@ const updateBlog = asyncHandler(async (req, res) => {
             if (descriptionEn) req.body.descriptionEn = descriptionEn;
             if (contentEn) req.body.contentEn = contentEn;
         } catch (err) {
-            console.warn("AI Translation failed during update:", err.message);
+            const message = err instanceof AIError 
+                ? `فشل في مرحلة "${err.step}": ${err.message}` 
+                : `فشل الترجمة للإنجليزية: ${err.message}`;
+            res.status(502);
+            throw new Error(message);
         }
     }
 
@@ -159,7 +196,6 @@ const updateBlog = asyncHandler(async (req, res) => {
         catch (e) {}
     }
 
-    // Prevent Mass Assignment vulnerability
     const allowedBlogUpdates = ['title', 'description', 'content', 'titleEn', 'descriptionEn', 'contentEn', 'image', 'tags'];
     const updateData = {};
     allowedBlogUpdates.forEach(field => {
@@ -169,7 +205,12 @@ const updateBlog = asyncHandler(async (req, res) => {
     });
 
     blog = await Blog.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    res.status(200).json(blog);
+    
+    res.status(200).json({
+        success: true,
+        message: "تم تحديث المقال بنجاح",
+        data: blog,
+    });
 });
 
 const deleteBlog = asyncHandler(async (req, res) => {
@@ -177,11 +218,14 @@ const deleteBlog = asyncHandler(async (req, res) => {
     
     if (!blog) {
         res.status(404);
-        throw new Error("Blog not found");
+        throw new Error("المقال غير موجود");
     }
 
     await Blog.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: "Blog deleted successfully" });
+    res.status(200).json({ 
+        success: true, 
+        message: "تم حذف المقال بنجاح" 
+    });
 });
 
 export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog };

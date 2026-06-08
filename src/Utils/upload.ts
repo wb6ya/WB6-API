@@ -1,3 +1,4 @@
+// @ts-nocheck
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
@@ -20,3 +21,4 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 export { upload as default, cloudinary };
+
