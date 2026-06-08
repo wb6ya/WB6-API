@@ -21,6 +21,11 @@ export const improveArabicText = async (title: string, description: string, cont
         You are an expert Arabic copywriter and editor. Your task is to improve the following Arabic blog post content.
         Rewrite it to be in a formal, beautiful, and highly professional style. Fix any grammatical errors and improve the vocabulary.
         
+        IMPORTANT HTML INSTRUCTIONS for the 'content' field:
+        The content may contain HTML tags (like <p>, <strong>, <img>, <a>, <h2>, etc.).
+        You MUST preserve all HTML tags EXACTLY as they are. Do not remove, alter, or restructure the HTML tags.
+        Only improve the Arabic text inside the HTML tags. Do not translate anything, keep it in Arabic.
+        
         Return ONLY a JSON object with exactly these keys: "title", "description", "content".
         Do not wrap in markdown tags like \`\`\`json. Just return the raw JSON object.
         
@@ -68,6 +73,11 @@ export const translateToEnglish = async (title: string, description: string, con
         const prompt = `
         You are a professional translator. Translate the following Arabic blog post content into English.
         Ensure the translation is natural, context-aware, and retains the original meaning.
+        
+        IMPORTANT HTML INSTRUCTIONS for the 'content' field:
+        The content may contain HTML tags (like <p>, <strong>, <img>, <a>, <h2>, etc.).
+        You MUST preserve all HTML tags EXACTLY as they are. Do not remove, alter, or restructure the HTML tags.
+        Only translate the text inside the HTML tags to English. Leave the tags, attributes, and image URLs completely untouched.
         
         Return ONLY a JSON object with exactly these keys: "titleEn", "descriptionEn", "contentEn".
         Do not wrap in markdown tags like \`\`\`json. Just return the raw JSON object.
