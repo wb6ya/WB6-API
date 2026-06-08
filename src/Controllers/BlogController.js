@@ -9,21 +9,29 @@ const createBlog = asyncHandler(async (req, res) => {
         req.body.image = req.file.path;
     }
     
-    const improvedArabic = await improveArabicText(
-        req.body.title,
-        req.body.description,
-        req.body.content
-    );
+    let improvedArabic = { title: req.body.title, description: req.body.description, content: req.body.content };
+    try {
+        const result = await improveArabicText(req.body.title, req.body.description, req.body.content);
+        if (result) improvedArabic = { ...improvedArabic, ...result };
+    } catch (err) {
+        console.warn("AI Text Improvement failed, using original text:", err.message);
+    }
 
-    req.body.title = improvedArabic.title || req.body.title;
-    req.body.description = improvedArabic.description || req.body.description;
-    req.body.content = improvedArabic.content || req.body.content;
+    req.body.title = improvedArabic.title;
+    req.body.description = improvedArabic.description;
+    req.body.content = improvedArabic.content;
 
-    const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
-        req.body.title, 
-        req.body.description, 
-        req.body.content
-    );
+    let titleEn = "", descriptionEn = "", contentEn = "";
+    try {
+        const result = await translateToEnglish(req.body.title, req.body.description, req.body.content);
+        if (result) {
+            titleEn = result.titleEn;
+            descriptionEn = result.descriptionEn;
+            contentEn = result.contentEn;
+        }
+    } catch (err) {
+        console.warn("AI Translation failed, leaving English fields empty:", err.message);
+    }
     
     let parsedTags = [];
     if (req.body.tags) {
@@ -122,21 +130,28 @@ const updateBlog = asyncHandler(async (req, res) => {
         const descToProcess = req.body.description || blog.description;
         const contentToProcess = req.body.content || blog.content;
         
-        const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
+        try {
+            const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
+            if (improvedArabic.title) req.body.title = improvedArabic.title;
+            if (improvedArabic.description) req.body.description = improvedArabic.description;
+            if (improvedArabic.content) req.body.content = improvedArabic.content;
+        } catch (err) {
+            console.warn("AI Text Improvement failed during update:", err.message);
+        }
 
-        if (improvedArabic.title) req.body.title = improvedArabic.title;
-        if (improvedArabic.description) req.body.description = improvedArabic.description;
-        if (improvedArabic.content) req.body.content = improvedArabic.content;
-
-        const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
-            req.body.title || blog.title, 
-            req.body.description || blog.description, 
-            req.body.content || blog.content
-        );
-        
-        if (titleEn) req.body.titleEn = titleEn;
-        if (descriptionEn) req.body.descriptionEn = descriptionEn;
-        if (contentEn) req.body.contentEn = contentEn;
+        try {
+            const { titleEn, descriptionEn, contentEn } = await translateToEnglish(
+                req.body.title || blog.title, 
+                req.body.description || blog.description, 
+                req.body.content || blog.content
+            );
+            
+            if (titleEn) req.body.titleEn = titleEn;
+            if (descriptionEn) req.body.descriptionEn = descriptionEn;
+            if (contentEn) req.body.contentEn = contentEn;
+        } catch (err) {
+            console.warn("AI Translation failed during update:", err.message);
+        }
     }
 
     if (req.body.tags) {

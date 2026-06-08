@@ -1,9 +1,7 @@
 import { cloudinary } from "./upload.js";
-import https from "https";
-
 export const generateAndUploadImage = async (title, description) => {
     try {
-        const imagePrompt = `Premium high-end 3D app icon of: ${title || description}. Masterpiece, highly detailed, beautiful soft studio lighting, vivid vibrant colors, glossy finish, modern UI/UX design, Behance top trending, pure #ffffff white background, centered and isolated.`;
+        const imagePrompt = `Premium high-end 3D app icon of: ${title || description}. Masterpiece, highly detailed, beautiful soft studio lighting, vivid vibrant colors, glossy finish, modern UI/UX design, Behance top trending, pure #ffffff white background, centered and isolated. NO text, NO words, NO letters, NO logos, NO brands, NO watermarks, NO signatures.`;
         console.log("Generated Icon Prompt:", imagePrompt);
 
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -15,6 +13,9 @@ export const generateAndUploadImage = async (title, description) => {
         }
 
         console.log("Fetching image from Cloudflare Workers AI...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout for production stability
+
         const response = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/stabilityai/stable-diffusion-xl-base-1.0`,
             {
@@ -24,8 +25,10 @@ export const generateAndUploadImage = async (title, description) => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ prompt: imagePrompt }),
+                signal: controller.signal
             }
         );
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errText = await response.text();
