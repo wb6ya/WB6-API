@@ -3,7 +3,7 @@ import https from "https";
 
 export const generateAndUploadImage = async (title, description) => {
     try {
-        const imagePrompt = `Ultra minimalistic 2D vector UI icon of: ${title || description}. Dribbble style, flat solid colors, bold clean outlines, strict geometric shapes, NO gradients, NO 3d, NO shadows, pure #ffffff white background.`;
+        const imagePrompt = `Premium high-end 3D app icon of: ${title || description}. Masterpiece, highly detailed, beautiful soft studio lighting, vivid vibrant colors, glossy finish, modern UI/UX design, Behance top trending, pure #ffffff white background, centered and isolated.`;
         console.log("Generated Icon Prompt:", imagePrompt);
 
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
