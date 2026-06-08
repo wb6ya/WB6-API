@@ -5,13 +5,27 @@ export const generateAndUploadImage = async (title, description) => {
         const imagePrompt = `Minimalist flat vector app icon of: ${title || description}. Pure white background, isolated, no shadows, 2D graphic design.`;
         console.log("Generated Icon Prompt:", imagePrompt);
 
-        // Use Pollinations AI (free, no key required) with square aspect ratio
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=400&height=400&nologo=true`;
+        const apiKey = process.env.HF_API_KEY;
+        if (!apiKey) {
+            console.warn("HF_API_KEY is not set. Skipping AI image generation.");
+            return null;
+        }
 
-        console.log("Fetching image from Pollinations AI...");
-        const response = await fetch(imageUrl);
+        console.log("Fetching image from Hugging Face AI...");
+        const response = await fetch(
+            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ inputs: imagePrompt }),
+            }
+        );
         if (!response.ok) {
-            throw new Error(`Failed to fetch from Pollinations: ${response.status} ${response.statusText}`);
+            let errorText = await response.text();
+            throw new Error(`Failed to fetch from Hugging Face: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
         const arrayBuffer = await response.arrayBuffer();
