@@ -5,27 +5,39 @@ export const generateAndUploadImage = async (title, description) => {
         const imagePrompt = `Minimalist flat vector app icon of: ${title || description}. Pure white background, isolated, no shadows, 2D graphic design.`;
         console.log("Generated Icon Prompt:", imagePrompt);
 
+        let response = null;
         const apiKey = process.env.HF_API_KEY;
-        if (!apiKey) {
-            console.warn("HF_API_KEY is not set. Skipping AI image generation.");
-            return null;
-        }
 
-        console.log("Fetching image from Hugging Face AI...");
-        const response = await fetch(
-            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ inputs: imagePrompt }),
+        try {
+            if (!apiKey) throw new Error("HF_API_KEY is not set.");
+            
+            console.log("Attempting to fetch image from Hugging Face AI...");
+            response = await fetch(
+                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ inputs: imagePrompt }),
+                }
+            );
+            
+            if (!response.ok) {
+                let errorText = await response.text();
+                throw new Error(`Hugging Face API returned ${response.status}: ${errorText}`);
             }
-        );
-        if (!response.ok) {
-            let errorText = await response.text();
-            throw new Error(`Failed to fetch from Hugging Face: ${response.status} ${response.statusText} - ${errorText}`);
+        } catch (error) {
+            console.warn(`Hugging Face failed (${error.message}). Falling back to Pollinations AI...`);
+            
+            // Fallback to Pollinations AI (Works locally, blocked on Vercel)
+            const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=400&height=400&nologo=true`;
+            response = await fetch(pollUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Both image APIs failed. Pollinations returned: ${response.status}`);
+            }
         }
         
         const arrayBuffer = await response.arrayBuffer();
