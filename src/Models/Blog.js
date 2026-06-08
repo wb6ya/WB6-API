@@ -31,6 +31,13 @@ const blogSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    icon: {
+        type: String,
+        default: ""
+    },
+    link: {
+        type: String
+    },
     tags: {
         type: [String],
         default: []

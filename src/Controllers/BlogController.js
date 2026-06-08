@@ -1,6 +1,8 @@
 import Blog from "#models/Blog.js";
 import asyncHandler from "express-async-handler";
 import { translateToEnglish, improveArabicText } from "#utils/translate.js";
+import { generateAndUploadImage } from "#utils/aiImage.js";
+import mongoose from "mongoose";
 
 const createBlog = asyncHandler(async (req, res) => {
     if (req.file) {
@@ -29,13 +31,24 @@ const createBlog = asyncHandler(async (req, res) => {
         catch (e) { parsedTags = []; }
     }
 
+    const aiIconUrl = await generateAndUploadImage(titleEn || req.body.title, descriptionEn || req.body.description);
+    if (aiIconUrl) {
+        req.body.icon = aiIconUrl;
+    }
+
+    // Generate the exact link format based on the user's website structure
+    const blogId = new mongoose.Types.ObjectId();
+    const link = `https://blog.wb6ya.com/ar/blog/${blogId}`;
+
     const blogData = {
+        _id: blogId,
         ...req.body,
         titleEn,
         descriptionEn,
         contentEn,
         tags: parsedTags,
-        author: req.user._id
+        author: req.user._id,
+        link
     };
 
     const blog = await Blog.create(blogData);
