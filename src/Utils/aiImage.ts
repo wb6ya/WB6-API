@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { cloudinary } from "./upload.js";
 import { AIError } from "./translate.js";
 
@@ -43,12 +42,12 @@ export const generateAndUploadImage = async (title: string, description: string)
         const buffer = Buffer.from(arrayBuffer);
 
         console.log("Uploading AI generated image to Cloudinary...");
-        const uploadResponse = await new Promise((resolve, reject) => {
+        const uploadResponse = await new Promise<{ secure_url: string }>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 { 
                     folder: "portfolio_uploads/ai_generated",
                 },
-                (error, result) => {
+                (error: any, result: any) => {
                     if (error) reject(error);
                     else resolve(result);
                 }
