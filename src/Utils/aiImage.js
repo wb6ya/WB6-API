@@ -33,10 +33,26 @@ export const generateAndUploadImage = async (title, description) => {
         // Use Pollinations AI (free, no key required) with square aspect ratio
         const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=400&height=400&nologo=true`;
 
-        // Upload directly to Cloudinary
+        console.log("Fetching image from Pollinations AI...");
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch from Pollinations: ${response.status} ${response.statusText}`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Upload directly to Cloudinary via stream
         console.log("Uploading AI generated image to Cloudinary...");
-        const uploadResponse = await cloudinary.uploader.upload(imageUrl, {
-            folder: "portfolio_uploads/ai_generated"
+        const uploadResponse = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                { folder: "portfolio_uploads/ai_generated" },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+            uploadStream.end(buffer);
         });
 
         console.log("AI Image generated and uploaded successfully.");
