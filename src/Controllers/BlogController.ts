@@ -10,21 +10,25 @@ const createBlog = asyncHandler(async (req, res) => {
         req.body.image = req.file.path;
     }
     
-    // الخطوة 1: تحسين النص العربي (إجباري - يوقف الإنشاء عند الفشل)
-    let improvedArabic;
-    try {
-        improvedArabic = await improveArabicText(req.body.title, req.body.description, req.body.content);
-    } catch (err) {
-        const message = err instanceof AIError 
-            ? `فشل في مرحلة "${err.step}": ${err.message}` 
-            : `فشل تحسين النص العربي: ${err.message}`;
-        res.status(502);
-        throw new Error(message);
-    }
+    // الخطوة 1: تحسين النص العربي (اختياري بناءً على طلب المستخدم)
+    const enhanceWithAI = req.body.enhanceWithAI === 'true' || req.body.enhanceWithAI === true;
+    
+    if (enhanceWithAI) {
+        let improvedArabic;
+        try {
+            improvedArabic = await improveArabicText(req.body.title, req.body.description, req.body.content);
+        } catch (err) {
+            const message = err instanceof AIError 
+                ? `فشل في مرحلة "${err.step}": ${err.message}` 
+                : `فشل تحسين النص العربي: ${err.message}`;
+            res.status(502);
+            throw new Error(message);
+        }
 
-    req.body.title = improvedArabic.title;
-    req.body.description = improvedArabic.description;
-    req.body.content = improvedArabic.content;
+        req.body.title = improvedArabic.title;
+        req.body.description = improvedArabic.description;
+        req.body.content = improvedArabic.content;
+    }
 
     // الخطوة 2: الترجمة للإنجليزية (إجباري - يوقف الإنشاء عند الفشل)
     let titleEn, descriptionEn, contentEn;
@@ -157,18 +161,22 @@ const updateBlog = asyncHandler(async (req, res) => {
         const descToProcess = req.body.description || blog.description;
         const contentToProcess = req.body.content || blog.content;
         
-        // تحسين النص العربي (إجباري عند التعديل)
-        try {
-            const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
-            if (improvedArabic.title) req.body.title = improvedArabic.title;
-            if (improvedArabic.description) req.body.description = improvedArabic.description;
-            if (improvedArabic.content) req.body.content = improvedArabic.content;
-        } catch (err) {
-            const message = err instanceof AIError 
-                ? `فشل في مرحلة "${err.step}": ${err.message}` 
-                : `فشل تحسين النص العربي: ${err.message}`;
-            res.status(502);
-            throw new Error(message);
+        // تحسين النص العربي (اختياري عند التعديل)
+        const enhanceWithAI = req.body.enhanceWithAI === 'true' || req.body.enhanceWithAI === true;
+        
+        if (enhanceWithAI) {
+            try {
+                const improvedArabic = await improveArabicText(titleToProcess, descToProcess, contentToProcess);
+                if (improvedArabic.title) req.body.title = improvedArabic.title;
+                if (improvedArabic.description) req.body.description = improvedArabic.description;
+                if (improvedArabic.content) req.body.content = improvedArabic.content;
+            } catch (err) {
+                const message = err instanceof AIError 
+                    ? `فشل في مرحلة "${err.step}": ${err.message}` 
+                    : `فشل تحسين النص العربي: ${err.message}`;
+                res.status(502);
+                throw new Error(message);
+            }
         }
 
         // الترجمة للإنجليزية (إجباري عند التعديل)
@@ -228,4 +236,40 @@ const deleteBlog = asyncHandler(async (req, res) => {
     });
 });
 
-export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog };
+const getRelatedBlogs = asyncHandler(async (req, res) => {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+        res.status(404);
+        throw new Error("المقال غير موجود");
+    }
+
+    let relatedBlogs = [];
+    if (blog.tags && blog.tags.length > 0) {
+        relatedBlogs = await Blog.find({
+            _id: { $ne: blog._id },
+            tags: { $in: blog.tags }
+        })
+        .populate('author', 'username avatar')
+        .sort({ createdAt: -1 })
+        .limit(3);
+    }
+
+    // إذا لم نجد مقالات لها نفس الوسوم (أو إذا كان المقال بلا وسوم)، نجلب أحدث المقالات
+    if (relatedBlogs.length < 3) {
+        const excludeIds = [blog._id, ...relatedBlogs.map(b => b._id)];
+        const latestBlogs = await Blog.find({ _id: { $nin: excludeIds } })
+            .populate('author', 'username avatar')
+            .sort({ createdAt: -1 })
+            .limit(3 - relatedBlogs.length);
+        
+        relatedBlogs = [...relatedBlogs, ...latestBlogs];
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "تم جلب المقالات ذات الصلة",
+        data: relatedBlogs,
+    });
+});
+
+export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs };
