@@ -1,8 +1,8 @@
 // @ts-nocheck
-import Blog from "#models/Blog.js";
+import Blog from "../Models/Blog.js";
 import asyncHandler from "express-async-handler";
-import { translateToEnglish, improveArabicText, AIError } from "#utils/translate.js";
-import { generateAndUploadImage } from "#utils/aiImage.js";
+import { translateToEnglish, improveArabicText, AIError } from "../Utils/translate.js";
+import { generateAndUploadImage } from "../Utils/aiImage.js";
 import mongoose from "mongoose";
 
 const createBlog = asyncHandler(async (req, res) => {

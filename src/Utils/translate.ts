@@ -4,6 +4,8 @@ export class AIError extends Error {
     constructor(message: string, public readonly step: string) {
         super(message);
         this.name = "AIError";
+    }
+}
 let currentKeyIndex = 0;
 
 const getApiKeys = () => {

@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs } from "#controllers/BlogController.js";
-import BlogValidator from "#utils/Validators/BlogValidator.js";
-import validate from "#middleware/validate.js";
-import { protect, admin } from "#middleware/authMiddleware.js";
-import upload from "#utils/upload.js";
+import { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs } from "../Controllers/BlogController.js";
+import BlogValidator from "../Utils/Validators/BlogValidator.js";
+import validate from "../Middleware/validate.js";
+import { protect, admin } from "../Middleware/authMiddleware.js";
+import upload from "../Utils/upload.js";
 
 const router = Router();
 

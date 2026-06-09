@@ -1,7 +1,7 @@
 // @ts-nocheck
-import User from "#models/User.js";
+import User from "../Models/User.js";
 import asyncHandler from "express-async-handler";
-import generateToken from "#utils/generateToken.js";
+import generateToken from "../Utils/generateToken.js";
 
 const registerUser = asyncHandler(async (req, res) => {
     const { email, password, username } = req.body;

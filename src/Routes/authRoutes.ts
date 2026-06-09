@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { registerUser, loginUser, setupAdmin, updateProfile, getAllUsers, updateUser } from "#controllers/AuthController.js";
-import { protect, admin } from "#middleware/authMiddleware.js";
-import upload from "#utils/upload.js";
+import { registerUser, loginUser, setupAdmin, updateProfile, getAllUsers, updateUser } from "../Controllers/AuthController.js";
+import { protect, admin } from "../Middleware/authMiddleware.js";
+import upload from "../Utils/upload.js";
 
 const router = Router();
 

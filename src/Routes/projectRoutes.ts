@@ -1,9 +1,9 @@
 import { Router } from "express";
-import validate from "#middleware/validate.js";
-import projectValidator from "#utils/Validators/ProjectValidator.js";
-import { createProject, getAllProjects, getProjectById, updateProject, deleteProject } from "#controllers/ProjectController.js";
-import { protect, admin } from "#middleware/authMiddleware.js";
-import upload from "#utils/upload.js";
+import validate from "../Middleware/validate.js";
+import projectValidator from "../Utils/Validators/ProjectValidator.js";
+import { createProject, getAllProjects, getProjectById, updateProject, deleteProject } from "../Controllers/ProjectController.js";
+import { protect, admin } from "../Middleware/authMiddleware.js";
+import upload from "../Utils/upload.js";
 
 const router = Router();
 

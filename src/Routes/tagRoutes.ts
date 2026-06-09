@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { getTags, createTag, deleteTag } from "#controllers/TagController.js";
-import { protect, admin } from "#middleware/authMiddleware.js";
+import { getTags, createTag, deleteTag } from "../Controllers/TagController.js";
+import { protect, admin } from "../Middleware/authMiddleware.js";
 
 const router = Router();
 

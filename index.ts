@@ -4,12 +4,12 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
-import { env } from "#config/Env.js";
-import blogRoutes from "#routes/blogRoutes.js";
-import errorHandler from "#middleware/errorHandler.js";
-import authRoutes from "#routes/authRoutes.js";
-import projectRoutes from "#routes/projectRoutes.js";
-import tagRoutes from "#routes/tagRoutes.js";
+import { env } from "./src/Config/Env.js";
+import blogRoutes from "./src/Routes/blogRoutes.js";
+import errorHandler from "./src/Middleware/errorHandler.js";
+import authRoutes from "./src/Routes/authRoutes.js";
+import projectRoutes from "./src/Routes/projectRoutes.js";
+import tagRoutes from "./src/Routes/tagRoutes.js";
 
 const app = express();
 

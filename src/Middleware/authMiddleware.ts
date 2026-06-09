@@ -1,7 +1,7 @@
 // @ts-nocheck
 import jwt from "jsonwebtoken";
-import { env } from "#config/Env.js";
-import User from "#models/User.js";
+import { env } from "../Config/Env.js";
+import User from "../Models/User.js";
 import asyncHandler from "express-async-handler";
 
 const protect = asyncHandler(async (req, res, next) => {

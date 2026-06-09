@@ -1,4 +1,4 @@
-import Tag from "#models/Tag.js";
+import Tag from "../Models/Tag.js";
 import asyncHandler from "express-async-handler";
 
 const getTags = asyncHandler(async (req, res) => {

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import Project from "#models/Project.js";
+import Project from "../Models/Project.js";
 import asyncHandler from "express-async-handler";
 
 const createProject = asyncHandler(async (req, res) => {
