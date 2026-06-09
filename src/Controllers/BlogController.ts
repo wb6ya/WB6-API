@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Blog from "../Models/Blog.js";
+import Comment from "../Models/Comment.js";
 import asyncHandler from "express-async-handler";
 import { translateToEnglish, improveArabicText, AIError } from "../Utils/translate.js";
 import { generateAndUploadImage } from "../Utils/aiImage.js";
@@ -326,4 +327,48 @@ const getBlogStats = asyncHandler(async (req, res) => {
     });
 });
 
-export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats };
+const addComment = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    let { authorName, content } = req.body;
+
+    if (!content || content.trim() === '') {
+        res.status(400);
+        throw new Error("محتوى التعليق مطلوب");
+    }
+
+    // Basic XSS Protection: Escaping HTML tags
+    const sanitize = (str) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    authorName = authorName ? sanitize(authorName.substring(0, 50)) : "Anonymous";
+    content = sanitize(content.substring(0, 1000));
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+        res.status(404);
+        throw new Error("المقال غير موجود");
+    }
+
+    const comment = await Comment.create({
+        blogId: id,
+        authorName,
+        content
+    });
+
+    res.status(201).json({
+        success: true,
+        message: "تمت إضافة التعليق",
+        data: comment
+    });
+});
+
+const getComments = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const comments = await Comment.find({ blogId: id }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        data: comments
+    });
+});
+
+export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats, addComment, getComments };
