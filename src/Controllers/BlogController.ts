@@ -272,4 +272,22 @@ const getRelatedBlogs = asyncHandler(async (req, res) => {
     });
 });
 
-export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs };
+const incrementView = asyncHandler(async (req, res) => {
+    const blog = await Blog.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } }, { new: true });
+    if (!blog) {
+        res.status(404);
+        throw new Error("المقال غير موجود");
+    }
+    res.status(200).json({ success: true, message: "تم زيادة عدد المشاهدات", views: blog.views });
+});
+
+const incrementLike = asyncHandler(async (req, res) => {
+    const blog = await Blog.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
+    if (!blog) {
+        res.status(404);
+        throw new Error("المقال غير موجود");
+    }
+    res.status(200).json({ success: true, message: "تم زيادة عدد الإعجابات", likes: blog.likes });
+});
+
+export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike };
