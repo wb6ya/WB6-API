@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike } from "../Controllers/BlogController.js";
+import { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats } from "../Controllers/BlogController.js";
 import BlogValidator from "../Utils/Validators/BlogValidator.js";
 import validate from "../Middleware/validate.js";
 import { protect, admin } from "../Middleware/authMiddleware.js";
@@ -8,6 +8,8 @@ import upload from "../Utils/upload.js";
 const router = Router();
 
 router.post("/", protect, upload.single("image"), validate(BlogValidator), createBlog);
+router.get("/sitemap", getSitemapData);
+router.get("/stats", protect, admin, getBlogStats);
 router.get("/", getAllBlogs);
 router.get("/:id/related", getRelatedBlogs);
 router.get("/:id", getBlogById);

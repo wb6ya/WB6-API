@@ -107,10 +107,12 @@ const getAllBlogs = asyncHandler(async (req, res) => {
         filter.tags = String(req.query.tag);
     }
 
+    const sortObj = req.query.sort === 'popular' ? { views: -1, createdAt: -1 } : { createdAt: -1 };
+
     const total = await Blog.countDocuments(filter);
     const blogs = await Blog.find(filter)
         .populate('author', 'username avatar')
-        .sort({ createdAt: -1 })
+        .sort(sortObj)
         .skip(startIndex)
         .limit(limit);
 
@@ -290,4 +292,38 @@ const incrementLike = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: "تم زيادة عدد الإعجابات", likes: blog.likes });
 });
 
-export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike };
+const getSitemapData = asyncHandler(async (req, res) => {
+    const blogs = await Blog.find({}, '_id updatedAt createdAt');
+    res.status(200).json(blogs);
+});
+
+const getBlogStats = asyncHandler(async (req, res) => {
+    // Aggregation pipeline for total views and likes
+    const stats = await Blog.aggregate([
+        {
+            $group: {
+                _id: null,
+                totalViews: { $sum: "$views" },
+                totalLikes: { $sum: "$likes" },
+                totalBlogs: { $sum: 1 }
+            }
+        }
+    ]);
+
+    // Fetch top 5 blogs by views
+    const topBlogs = await Blog.find({}, 'title titleEn views likes image')
+        .sort({ views: -1 })
+        .limit(5);
+
+    const totals = stats.length > 0 ? stats[0] : { totalViews: 0, totalLikes: 0, totalBlogs: 0 };
+
+    res.status(200).json({
+        success: true,
+        data: {
+            ...totals,
+            topBlogs
+        }
+    });
+});
+
+export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats };
