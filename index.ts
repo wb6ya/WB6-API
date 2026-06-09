@@ -10,6 +10,7 @@ import errorHandler from "./src/Middleware/errorHandler.js";
 import authRoutes from "./src/Routes/authRoutes.js";
 import projectRoutes from "./src/Routes/projectRoutes.js";
 import tagRoutes from "./src/Routes/tagRoutes.js";
+import subscriberRoutes from "./src/Routes/SubscriberRoutes.js";
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use("/api/blog", blogRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/tags", tagRoutes);
+app.use("/api/subscribers", subscriberRoutes);
 
 app.use(errorHandler);
 
