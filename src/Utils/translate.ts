@@ -52,7 +52,10 @@ export const improveArabicText = async (title: string, description: string, cont
     try {
         const executeImprovement = async (apiKey: string) => {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-flash-latest",
+                generationConfig: { responseMimeType: "application/json" }
+            });
 
             const prompt = `
             You are an expert Arabic copywriter and editor. Your task is to improve the following Arabic blog post content.
@@ -104,7 +107,10 @@ export const translateToEnglish = async (title: string, description: string, con
     try {
         const executeTranslation = async (apiKey: string) => {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-flash-latest",
+                generationConfig: { responseMimeType: "application/json" }
+            });
 
             const prompt = `
             You are a professional translator. Translate the following Arabic blog post content into English.
