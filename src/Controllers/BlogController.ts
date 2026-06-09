@@ -371,4 +371,19 @@ const getComments = asyncHandler(async (req, res) => {
     });
 });
 
-export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats, addComment, getComments };
+const deleteComment = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const comment = await Comment.findByIdAndDelete(id);
+
+    if (!comment) {
+        res.status(404);
+        throw new Error("التعليق غير موجود");
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "تم حذف التعليق بنجاح"
+    });
+});
+
+export { createBlog, getAllBlogs, getBlogById, updateBlog, deleteBlog, getRelatedBlogs, incrementView, incrementLike, getSitemapData, getBlogStats, addComment, getComments, deleteComment };
