@@ -3,8 +3,6 @@ import mongoose from "mongoose";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
-import xss from "xss-clean";
 
 import { env } from "./src/Config/Env.js";
 import blogRoutes from "./src/Routes/blogRoutes.js";
@@ -26,12 +24,6 @@ const limiter = rateLimit({
 });
 app.use("/api", limiter);
 app.use(express.json());
-
-// Security: Prevent NoSQL injection
-app.use(mongoSanitize());
-
-// Security: Prevent XSS
-app.use(xss());
 
 let isConnected = false;
 
